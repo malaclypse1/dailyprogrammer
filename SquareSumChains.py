@@ -45,6 +45,10 @@
 # 1 connects to 3 (sum 4), 8 (sum 9) and 15 (sum 16). Once the graph is built, find a hamiltonian path that traverses
 # it. If such a path exists, that path is the solution.
 
+# Hamiltonian path detection uses Bellman, Held, and Karp algorithm with time complexity O(2^n n^2). This gets really
+# slow above n=19. It would probably be faster to use a backtracking search (Iwama, Kazuo; Nakashima, Takuya (2007),
+# "An improved exact algorithm for cubic graph TSP)
+
 from math import sqrt
 from collections import defaultdict
 
@@ -87,6 +91,7 @@ def check_hamiltonian(graph,n):
     # column 3 (binary 11) is the subset containing vertices 0 and 1, while column 4 (101) contains vertices 0 and 2.
     # elements of array[i][j] are true if the subset j contains a path that ends at vertex i.
     dp = [[False for i in range(2**n)] for j in range(n)]
+    result = []
     # set elements [i][2**i] to true. Column 1 (subset{0}) contains a path that ends at vertex 0.
     for i in range(n):
         dp[i][2**i] = True
@@ -106,17 +111,41 @@ def check_hamiltonian(graph,n):
 
     #print2dBool(dp)
     for i in range(n):
-        if dp[i][(1<<n)-1]:
+        # look at each row of last column. If one of those is true, there is a hamiltonian path
+        mask = (1<<n)-1
+        if dp[i][mask]:
             # extract path here
-            return True;
-    return False
+            extract_path(dp, graph, i, mask, result)
+            #print(result)
+            break
+    return result
 
 
+def extract_path(dp, graph, i, mask, result):
+    if (mask):
+        #print('mask', bin(mask))
+        result.append(i + 1)
+        # take that node off mask, and compare rows of connected nodes to new mask to find next node
+        mask -= (1 << i)
+        #print('new mask', bin(mask))
+        #print(graph[i + 1])
+        for next in graph[i + 1]:
+            if dp[next - 1][mask]:
+                extract_path(dp, graph, next-1, mask, result)
+                break
+    else:
+        # base case: no remaining nodes in mask
+        return
+
+################### main ###################
 
 n = int(input('enter N: '))
 
 graph = build_graph()
 
-print(graph)
-if check_hamiltonian(graph,n):
-    print('There is a path')
+#print(graph)
+answer =  check_hamiltonian(graph,n)
+if len(answer):
+    print(answer)
+else:
+    print('there is no solution')
